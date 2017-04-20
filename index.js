@@ -42,21 +42,46 @@ Item = Relay.createContainer(Item, {
 
 // showing a list of top items, resembles the fornt page of hacker news
 class TopItems extends React.Component {
+	_onChange(ev) {
+		let storyType = ev.target.value
+		this.setState({ storyType })
+		this.props.relay.setVariables({
+			storyType
+		})
+	}
+
 	render() {
-		let items = this.props.store.topStories.map(
+		let items = this.props.store.stories.map(
 			(store, idx) => <Item store={store} key={idx} />
 		);
+		let variables = this.props.relay.variables
+
+		// To reduce the perceived lag
+		// There are less crude ways of doing this, but this works for now
+		let currentStoryType = (this.state && this.state.storyType) || variables.storyType
+
 		return <div>
+			<select onChange={this._onChange.bind(this)} value={currentStoryType}>
+        <option value="top">Top</option>
+        <option value="new">New</option>
+        <option value="ask">Ask HN</option>
+        <option value="show">Show HN</option>
+      </select>
 			{ items }
-			</div>;
+		</div>;
 	}
 }
+
 // now we can request 'topStories' instead of one item
 TopItems = Relay.createContainer(TopItems, {
+	initialVariables: {
+		storyType: 'top'
+	},
 	fragments: {
+		// $storyType denotes a graphql variable
 		store: () => Relay.QL`
 			fragment on HackerNewsAPI {
-				topStories { ${Item.getFragment('store')} },
+				stories(storyType: $storyType) { ${Item.getFragment('store')} },
 			}
 		`,
 	},
